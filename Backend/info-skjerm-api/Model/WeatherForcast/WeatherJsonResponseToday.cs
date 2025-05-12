@@ -2,10 +2,10 @@
 {
     public class WeatherJsonResponseToday
     {
-        public List<TodayWeatherForcast> todayForcastList { get; set; } = new();
+        public List<TodayWeatherForecast> todayForcastList { get; set; } = new();
     }
 
-    public class TodayWeatherForcast
+    public class TodayWeatherForecast
     {
         public float airTemperature { get; set; }
 

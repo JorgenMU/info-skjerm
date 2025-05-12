@@ -6,7 +6,7 @@ The route for these endpoints are {baseurl}/PostEvents/{endpoint}
 Authored by @Marcus-Aastum
 */
 
-using info_skjerm_api.Model;
+using info_skjerm_api.Model.Event;
 using Microsoft.AspNetCore.Mvc;
 
 namespace info_skjerm_api.Controllers

@@ -1,4 +1,4 @@
-namespace info_skjerm_api.Model;
+namespace info_skjerm_api.Model.Event;
 public class Events{
 
     public int ID { get; set;}

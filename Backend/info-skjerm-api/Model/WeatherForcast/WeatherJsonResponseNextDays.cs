@@ -2,10 +2,10 @@ namespace info_skjerm_api.Model;
 
 public class WeatherJsonResponseNextDays
 {
-    public List<NextDaysWeatherForcast> nextDaysForcastList { get; set; } = new();
+    public List<NextDaysWeatherForecast> nextDaysForcastList { get; set; } = new();
 }
 
-public class NextDaysWeatherForcast
+public class NextDaysWeatherForecast
 {
     public float airTemperature { get; set; }
 

@@ -1,7 +1,16 @@
 using Microsoft.EntityFrameworkCore;
+using Serilog;
+
+Log.Logger = new LoggerConfiguration()
+    .WriteTo.Console()
+    .CreateLogger();
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Host.UseSerilog();
+
+builder.Services.AddHttpClient();
+    
 builder.Services.AddControllers().AddJsonOptions(options =>
 {
 });

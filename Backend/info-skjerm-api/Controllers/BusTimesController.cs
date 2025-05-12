@@ -10,6 +10,7 @@ using System.Globalization;
 using System.Text;
 using System.Text.Json;
 using info_skjerm_api.Model;
+using info_skjerm_api.Model.Bus;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore.ValueGeneration.Internal;
 
@@ -17,13 +18,8 @@ namespace info_skjerm_api.Controllers
 {
     [ApiController]
     [Route("[controller]")]
-    public class BusTimesController : ControllerBase
+    public class BusTimesController(IHttpClientFactory httpClientFactory) : ControllerBase
     {
-        //Defines context for database
-        private readonly ApplicationDbContext _context;
-        public BusTimesController(ApplicationDbContext context) {
-            _context = context;
-        }
 
         //This endpoint returns bus departures, with an optional property "num" which defines how many buses to be returned (default 20)
         [HttpGet("departures")]
@@ -33,10 +29,10 @@ namespace info_skjerm_api.Controllers
             //Defines a request object with url and graphql-query
             var request = new HttpRequestMessage(HttpMethod.Post, "https://api.entur.io/journey-planner/v3/graphql");
             var query = """{"query": "{ stopPlace( id: \"NSR:StopPlace:44029\" ) { id name estimatedCalls( numberOfDepartures: """ + num.ToString() + """ ) { realtime aimedArrivalTime expectedArrivalTime destinationDisplay { frontText } quay { id } serviceJourney { journeyPattern { line { id name transportMode } } } } }}"}""";
-
             
             //Sends the request and converts response into a "Businfo" object
-            HttpClient httpClient = new HttpClient();
+            var httpClient = httpClientFactory.CreateClient();
+            
             request.Headers.Add("ET-Client-Name", "tillervgs-infoskjerm");
             request.Content = new StringContent(query, Encoding.UTF8, "application/json");
             var response = await httpClient.SendAsync(request);
@@ -48,30 +44,36 @@ namespace info_skjerm_api.Controllers
             List<BusRoute> all = [];
 
             //Iterates through every bus departure
-            for (int i = 0; i < jsonResponse.data.stopPlace.estimatedCalls.Count; i++)
+            foreach (var estimatedCalls in jsonResponse.data.stopPlace.estimatedCalls)
             {
                 //Assigns the departure to a "BusRoute"-object, and adds it to a list of all bus departures
-                BusRoute busRoute = new BusRoute();
-                busRoute.destination = jsonResponse.data.stopPlace.estimatedCalls[i].destinationDisplay.frontText;
-                busRoute.time = jsonResponse.data.stopPlace.estimatedCalls[i].expectedArrivalTime;
-                busRoute.isRealTime = jsonResponse.data.stopPlace.estimatedCalls[i].realtime;
-                busRoute.busLine = Int32.Parse(jsonResponse.data.stopPlace.estimatedCalls[i].serviceJourney.journeyPattern.line.id.Split(":")[2].Split("_")[1]);
+                var busRoute = new BusRoute
+                {
+                    destination = estimatedCalls.destinationDisplay.frontText,
+                    time = estimatedCalls.expectedArrivalTime,
+                    isRealTime = estimatedCalls.realtime,
+                    busLine = int.Parse(estimatedCalls.serviceJourney.journeyPattern.line.id.Split(":")[2].Split("_")[1])
+                };
                 all.Add(busRoute);
 
-                //Puts the object in the northbound or southbound list based on what "quay" it leaves from
-                if (jsonResponse.data.stopPlace.estimatedCalls[i].quay.id == "NSR:Quay:75606"){
-                    northBound.Add(busRoute);
-                }
-                else if (jsonResponse.data.stopPlace.estimatedCalls[i].quay.id == "NSR:Quay:75607"){
-
-                    southBound.Add(busRoute);
+                switch (estimatedCalls.quay.id)
+                {
+                    //Puts the object in the northbound or southbound list based on what "quay" it leaves from
+                    case "NSR:Quay:75606":
+                        northBound.Add(busRoute);
+                        break;
+                    case "NSR:Quay:75607":
+                        southBound.Add(busRoute);
+                        break;
                 }
             }
             //Creates a "BusStop"-object and returns this
-            BusStop busStop = new BusStop();
-            busStop.northBound = northBound;
-            busStop.southBound = southBound;
-            busStop.all = all;            
+            var busStop = new BusStop
+            {
+                northBound = northBound,
+                southBound = southBound,
+                all = all
+            };
 
             return Ok(busStop);
         }

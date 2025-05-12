@@ -1,4 +1,4 @@
-using info_skjerm_api.Model;
+using info_skjerm_api.Model.Event;
 using Microsoft.EntityFrameworkCore;
 
 public class ApplicationDbContext : DbContext
